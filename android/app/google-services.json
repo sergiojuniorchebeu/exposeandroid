@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "743563351918",
+    "project_id": "gesticket-167f9",
+    "storage_bucket": "gesticket-167f9.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:743563351918:android:54c0e97c79f0249319537f",
+        "android_client_info": {
+          "package_name": "com.example.project_android"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB0lZScvxJmO8NNxJy-9p1KB6ja3tVkcfs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
