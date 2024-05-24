@@ -51,11 +51,11 @@ class _HomePageState extends State<HomePage> {
     if (_currentUser != null && _currentUser.photoURL != null) {
       profileIcon = CircleAvatar(
         backgroundImage: NetworkImage(_currentUser.photoURL!),
-        radius: 20,
       );
     } else {
       profileIcon = const Icon(
         Icons.person,
+        color: Colors.black,
         size: 40,
       );
     }

@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:project_android/Home%20Page.dart';
@@ -75,7 +74,7 @@ class _InscriptionState extends State<Inscription> {
         return;
       }
 
-      setState(() {
+       setState(() {
         _isLoading = true;
       });
 
@@ -92,8 +91,7 @@ class _InscriptionState extends State<Inscription> {
           'email': email,
         });
 
-        // Inscription réussie, vous pouvez effectuer des actions supplémentaires ici
-
+     Navigator.pushReplacement(context, MaterialPageRoute(builder: (context)=>const HomePage()));
       } else {
         showDialog(
           context: context,
@@ -167,7 +165,6 @@ class _InscriptionState extends State<Inscription> {
         });
 
        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context)=>const HomePage()));
-
       } else {
         showDialog(
           context: context,
@@ -212,6 +209,7 @@ class _InscriptionState extends State<Inscription> {
       );
     }
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -330,14 +328,28 @@ class _InscriptionState extends State<Inscription> {
                                   colors: [Color(0xff28c6ff), Color(0xff86e0a0)]),
                             ),
                             child: Center(
-                              child: Text(
+                              child: _isLoading
+                                  ?AppWidget.loading(Colors.greenAccent)
+                                  : Text(
                                 "Inscription",
                                 style: AppWidget.styledetexteacceuil(),
                               ),
                             ),
                           ),
                         ),
-                        const SizedBox(height: 60,),
+                        const SizedBox(height: 30,),
+                        GestureDetector(
+                            onTap: (){
+                              _registerWithGoogle();
+                            },
+                            child: Row(
+                              children: [
+                                Text("Continuer avec Google", style: AppWidget.styledelabel(),),
+                                const SizedBox(width: 10,),
+                                Image.asset("assets/img/google.png", width: 30,),
+                              ],
+                            )),
+                        const SizedBox(height: 30),
                         Align(
                           alignment: Alignment.bottomRight,
                           child: GestureDetector(

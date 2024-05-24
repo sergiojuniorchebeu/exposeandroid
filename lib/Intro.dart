@@ -2,11 +2,12 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:project_android/Home%20Page.dart';
 import 'package:project_android/Inscription.dart';
 import 'package:project_android/Login.dart';
 import 'AppWidget.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+
+import 'Home Page.dart';
 
 
 class Intro extends StatefulWidget {
@@ -17,14 +18,15 @@ class Intro extends StatefulWidget {
 }
 
 class _IntroState extends State<Intro> {
-  final TextEditingController _login = TextEditingController();
-  final TextEditingController _password = TextEditingController();
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn();
+  bool _isLoading = false;
 
   Future<void> _googleLogIn() async {
+
     try {
-      final GoogleSignInAccount? googleSignInAccount = await _googleSignIn.signIn();
+      final GoogleSignInAccount? googleSignInAccount =
+      await _googleSignIn.signIn();
       if (googleSignInAccount != null) {
         final GoogleSignInAuthentication googleSignInAuthentication =
         await googleSignInAccount.authentication;
@@ -34,14 +36,31 @@ class _IntroState extends State<Intro> {
           accessToken: googleSignInAuthentication.accessToken,
         );
 
-        await _firebaseAuth.signInWithCredential(credential);
-
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => HomePage()),
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: Text("Connexion", style: AppWidget.styledelabel2(),),
+              content: Row(
+                children: [
+                  AppWidget.loading(Colors.green),
+                  const SizedBox(width: 7,),
+                  const  Text(
+                    "Veuillez patientez...",
+                    style: TextStyle(fontFamily: "Poppins"),
+                  ),
+                ],
+              ),
+            );
+          },
         );
+
+        await _firebaseAuth.signInWithCredential(credential);
+        Navigator.pushReplacement(
+            context, MaterialPageRoute(builder: (context) => const HomePage()));
       }
-    }catch (e) {
+    } catch (e) {
       showDialog(
         context: context,
         builder: (BuildContext context) {
@@ -61,6 +80,7 @@ class _IntroState extends State<Intro> {
       );
     }
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -79,7 +99,7 @@ class _IntroState extends State<Intro> {
           children: [
             Padding(
                 padding: const EdgeInsets.only(top: 100.0),
-                child: Image.asset("assets/img/former.png", width: 170,)),
+                child: Image.asset("assets/img/former.png", width: 160,)),
             const SizedBox(height: 30,),
             Text("Bienvenue", style: AppWidget.styledetexteacceuil(),
             ),
@@ -118,15 +138,35 @@ class _IntroState extends State<Intro> {
                 ),
               ),
             ),
-            const Spacer(),
-            Text("Continuer avec Google", style: AppWidget.styledelabel(),),
-            const SizedBox(height: 20,),
+            const SizedBox(height: 30,),
             GestureDetector(
-                onTap: (){
-                  _googleLogIn();
-                },
-                child: Image.asset("assets/img/google.png", width: 60,)),
-            const SizedBox(height: 10,),
+              onTap: (){
+                _googleLogIn();
+              },
+              child: Container(
+                height: 50,
+                width: 300,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                    border: Border.all(), borderRadius: BorderRadius.circular(20)
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Image.asset(
+                      "assets/img/google.png",
+                      width: 40,
+                    ),
+                    const SizedBox(width: 5,),
+                    Text("Continuer avec Google", style: AppWidget.styledelabel(),),
+
+                  ],
+                )
+              ),
+            ),
+
+
+            const Spacer(),
             Text(
                 "© 2024 Sergiojuniorchebeu",
                 style: AppWidget.stylesoustitre()

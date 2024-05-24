@@ -152,8 +152,16 @@ class AppWidget {
     );
   }
 
-}
+  static Center textetirelistedetick(String titre){
+    return Center(
+      child: Text(titre, style: styledelabel2(),),
+    );
+  }
 
-class container extends Container{
+  static CircularProgressIndicator loading(Color couleur){
+    return CircularProgressIndicator(
+      color: couleur,
+    );
+  }
 
 }

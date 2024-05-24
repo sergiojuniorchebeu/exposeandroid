@@ -19,22 +19,48 @@ class _LoginPageState extends State<LoginPage> {
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn();
   bool _isPasswordVisible = false;
+  bool _isLoading = false;
+
 
   Future<void> _googleLogIn() async {
+
     try {
-      final GoogleSignInAccount? googleSignInAccount = await _googleSignIn.signIn();
+      final GoogleSignInAccount? googleSignInAccount =
+          await _googleSignIn.signIn();
       if (googleSignInAccount != null) {
         final GoogleSignInAuthentication googleSignInAuthentication =
-        await googleSignInAccount.authentication;
+            await googleSignInAccount.authentication;
 
         final AuthCredential credential = GoogleAuthProvider.credential(
           idToken: googleSignInAuthentication.idToken,
           accessToken: googleSignInAuthentication.accessToken,
         );
 
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: Text("Connexion", style: AppWidget.styledelabel2(),),
+              content: Row(
+                children: [
+                  AppWidget.loading(Colors.green),
+                 const SizedBox(width: 7,),
+                 const  Text(
+                    "Veuillez patientez...",
+                    style: TextStyle(fontFamily: "Poppins"),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+
         await _firebaseAuth.signInWithCredential(credential);
+        Navigator.pushReplacement(
+            context, MaterialPageRoute(builder: (context) => const HomePage()));
       }
-    }catch (e) {
+    } catch (e) {
       showDialog(
         context: context,
         builder: (BuildContext context) {
@@ -54,6 +80,7 @@ class _LoginPageState extends State<LoginPage> {
       );
     }
   }
+
   Future<void> _signInWithEmailAndPassword() async {
     try {
       final String email = _login.text;
@@ -79,15 +106,18 @@ class _LoginPageState extends State<LoginPage> {
         );
         return;
       }
+      setState(() {
+        _isLoading = true;
+      });
 
       final UserCredential userCredential =
-      await _firebaseAuth.signInWithEmailAndPassword(
+          await _firebaseAuth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
 
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context)=>HomePage()));
-
+      Navigator.pushReplacement(
+          context, MaterialPageRoute(builder: (context) => HomePage()));
     } catch (e) {
       showDialog(
         context: context,
@@ -106,7 +136,11 @@ class _LoginPageState extends State<LoginPage> {
           );
         },
       );
+      setState(() {
+        _isLoading = false;
+      });
     }
+
   }
 
   @override
@@ -164,7 +198,9 @@ class _LoginPageState extends State<LoginPage> {
                         decoration: InputDecoration(
                           suffixIcon: IconButton(
                             icon: Icon(
-                              _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                              _isPasswordVisible
+                                  ? Icons.visibility
+                                  : Icons.visibility_off,
                               color: Colors.grey,
                             ),
                             onPressed: () {
@@ -189,7 +225,9 @@ class _LoginPageState extends State<LoginPage> {
                           style: AppWidget.styledelabel2(),
                         ),
                       ),
-                      const SizedBox(height: 50,),
+                      const SizedBox(
+                        height: 50,
+                      ),
                       GestureDetector(
                         onTap: _signInWithEmailAndPassword,
                         child: Container(
@@ -201,28 +239,56 @@ class _LoginPageState extends State<LoginPage> {
                                 colors: [Color(0xff28c6ff), Color(0xff86e0a0)]),
                           ),
                           child: Center(
-                            child: Text(
+                            child:  _isLoading
+                                ?AppWidget.loading(Colors.greenAccent)
+                                : Text(
                               "Connexion",
                               style: AppWidget.styledetexteacceuil(),
                             ),
                           ),
                         ),
                       ),
-                      const SizedBox(height: 100,),
+                      const SizedBox(
+                        height: 30,
+                      ),
+                      GestureDetector(
+                          onTap: () {
+                           _googleLogIn();
+                          },
+                          child: Row(
+                            children: [
+                              Text(
+                                "Continuer avec Google",
+                                style: AppWidget.styledelabel(),
+                              ),
+                              const SizedBox(
+                                width: 10,
+                              ),
+                              Image.asset(
+                                "assets/img/google.png",
+                                width: 30,
+                              ),
+                            ],
+                          )),
+                      const SizedBox(height: 20),
                       Align(
                         alignment: Alignment.bottomRight,
                         child: GestureDetector(
-                            onTap: (){
-                              Navigator.push(context,
-                                  MaterialPageRoute(builder: (context)=> Inscription()));
+                            onTap: () {
+                              Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (context) =>
+                                          const Inscription()));
                             },
-                            child: Text("Pas de Compte ? S'inscrire", style: AppWidget.styledelabel(),)),
+                            child: Text(
+                              "Pas de Compte ? S'inscrire",
+                              style: AppWidget.styledelabel(),
+                            )),
                       ),
                       const SizedBox(height: 20),
-                      Text(
-                          "© 2024 Sergiojuniorchebeu",
-                          style: AppWidget.stylesoustitre()
-                      ),
+                      Text("© 2024 Sergiojuniorchebeu",
+                          style: AppWidget.stylesoustitre()),
                     ]),
               ),
             ),
