@@ -1,10 +1,14 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:project_android/Agent/Agent%20Home%20Page.dart';
 import 'package:project_android/AppWidget.dart';
 import 'package:project_android/Home%20Page.dart';
 import 'package:project_android/Inscription.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import 'Admin /Amin homepage.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -22,125 +26,130 @@ class _LoginPageState extends State<LoginPage> {
   bool _isLoading = false;
 
 
-  Future<void> _googleLogIn() async {
 
+  Future<void> _googleLogIn() async {
     try {
-      final GoogleSignInAccount? googleSignInAccount =
-          await _googleSignIn.signIn();
+      setState(() {
+        _isLoading = true;
+      });
+
+      // Show a Scaffold Messenger with the message "Connecting..." while loading
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Connection...'),
+          duration: Duration(seconds: 3),
+        ),
+      );
+
+      final GoogleSignInAccount? googleSignInAccount = await _googleSignIn.signIn();
       if (googleSignInAccount != null) {
-        final GoogleSignInAuthentication googleSignInAuthentication =
-            await googleSignInAccount.authentication;
+        final GoogleSignInAuthentication googleSignInAuthentication = await googleSignInAccount.authentication;
 
         final AuthCredential credential = GoogleAuthProvider.credential(
           idToken: googleSignInAuthentication.idToken,
           accessToken: googleSignInAuthentication.accessToken,
         );
-
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              title: Text("Connexion", style: AppWidget.styledelabel2(),),
-              content: Row(
-                children: [
-                  AppWidget.loading(Colors.green),
-                 const SizedBox(width: 7,),
-                 const  Text(
-                    "Veuillez patientez...",
-                    style: TextStyle(fontFamily: "Poppins"),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-
         await _firebaseAuth.signInWithCredential(credential);
-        Navigator.pushReplacement(
-            context, MaterialPageRoute(builder: (context) => const HomePage()));
+        // Save the login state in SharedPreferences
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('isLoggedIn', true);
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const HomePage()),
+              (route) => false,
+        );
       }
     } catch (e) {
-      showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: const Text('Erreur'),
-            content: const Text("Quelque chose s'est mal passé"),
-            actions: [
-              TextButton(
-                child: const Text('OK'),
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-              ),
-            ],
-          );
-        },
-      );
+      _showErrorDialog("Error", "Something went wrong: $e");
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
   Future<void> _signInWithEmailAndPassword() async {
     try {
-      final String email = _login.text;
-      final String password = _password.text;
+      final String email = _login.text.trim();
+      final String password = _password.text.trim();
 
       if (email.isEmpty || password.isEmpty) {
-        showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              title: const Text('Erreur'),
-              content: const Text('Veuillez remplir tous les champs.'),
-              actions: [
-                TextButton(
-                  child: const Text('OK'),
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                ),
-              ],
-            );
-          },
-        );
+        _showErrorDialog('Error', 'Please fill in all fields.');
         return;
       }
+
       setState(() {
         _isLoading = true;
       });
 
-      final UserCredential userCredential =
-          await _firebaseAuth.signInWithEmailAndPassword(
-        email: email,
-        password: password,
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Connection...'),
+          duration: Duration(seconds: 5),
+        ),
       );
 
-      Navigator.pushReplacement(
-          context, MaterialPageRoute(builder: (context) => HomePage()));
-    } catch (e) {
-      showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: const Text('Erreur'),
-            content: const Text("Quelque chose s'est mal passé"),
-            actions: [
-              TextButton(
-                child: const Text('OK'),
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-              ),
-            ],
-          );
-        },
-      );
+      await _firebaseAuth.signInWithEmailAndPassword(email: email, password: password);
+      UserCredential userCredential = await _firebaseAuth.signInWithEmailAndPassword(email: email, password: password);
+      User? user = userCredential.user;
+
+      DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection('users').doc(user?.uid).get();
+      String role = userDoc['role'];
+
+      if (role == 'admin') {
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('isLoggedIn', true);
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const AdminHomePage()),
+              (route) => false,
+        );
+      } else if (role == 'user') {
+        // Save the login state in SharedPreferences
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('isLoggedIn', true);
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const HomePage()),
+              (route) => false,
+        );
+      }else if (role == 'agent'){
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('isLoggedIn', true);
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const HomeAgentPage()),
+              (route) => false,
+        );
+      }
+    }
+    catch (e) {
+      _showErrorDialog('Erreur', "Quelque chose s'est mal passé: $e");
+    } finally {
       setState(() {
         _isLoading = false;
       });
     }
+  }
 
+  void _showErrorDialog(String title, String content) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(title),
+          content: Text(content),
+          actions: [
+            TextButton(
+              child: const Text('OK'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override

@@ -22,7 +22,7 @@ class MyApp extends StatelessWidget {
         fontFamily: "Poppins",
         scaffoldBackgroundColor: Colors.grey[200],
       ),
-      home: Splash(),
+      home: Load(),
       debugShowCheckedModeBanner: false,
     );
   }

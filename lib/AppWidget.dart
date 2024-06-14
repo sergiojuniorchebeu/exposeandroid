@@ -152,6 +152,14 @@ class AppWidget {
     );
   }
 
+  static TextStyle styledetexte({FontWeight? w, double? taille, Color? couleur}) {
+    return TextStyle(
+      fontWeight: w ?? FontWeight.normal,
+      fontSize: taille ?? 14.0,
+      color: couleur ?? Colors.black,
+    );
+  }
+
   static Center textetirelistedetick(String titre){
     return Center(
       child: Text(titre, style: styledelabel2(),),

@@ -1,13 +1,11 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/painting.dart';
-import 'package:flutter/rendering.dart';
-import 'package:flutter/widgets.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import 'package:project_android/AppWidget.dart';
 import 'package:project_android/Drawer/Profile.dart';
-import 'package:project_android/Regions/Adamaoua.dart';
+import 'package:project_android/Login.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'Liste train.dart';
+import 'historique.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -18,39 +16,28 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
+  FontWeight bold = FontWeight.bold;
+  final List<String> regions = [
+    'Adamaoua', 'Centre', 'Est', 'Extrême-Nord', 'Littoral',
+    'Nord', 'Nord-Ouest', 'Ouest', 'Sud', 'Sud-Ouest'
+  ];
+
   @override
   Widget build(BuildContext context) {
-    User? _currentUser = _auth.currentUser;
-    Color green = Color(0xFF138675);
-    Color greenligth = Color(0xFF499D95);
-    Color orange = Color(0xFFff7259);
-    String? _selecteditem;
-    List<String> _menuitem = [
-      "Adamaoua",
-      "Centre",
-      "Est",
-      "Ex Nord",
-      "Littoral",
-      "Nord",
-      "Nord-Ouest",
-      "Ouest",
-      "Sud-Ouest",
-      "Sud"
-    ];
+    User? currentUser = _auth.currentUser;
 
     String message = "";
-    if (_currentUser != null) {
-      if (_currentUser.displayName != null) {
-        message += "" + _currentUser.displayName!;
+    if (currentUser != null) {
+      if (currentUser.displayName != null) {
+        message += currentUser.displayName!;
       } else {
-        message += "" + _currentUser.email!;
+        message += currentUser.email!;
       }
     }
     Widget profileIcon;
-    if (_currentUser != null && _currentUser.photoURL != null) {
+    if (currentUser != null && currentUser.photoURL != null) {
       profileIcon = CircleAvatar(
-        backgroundImage: NetworkImage(_currentUser.photoURL!),
+        backgroundImage: NetworkImage(currentUser.photoURL!),
       );
     } else {
       profileIcon = const Icon(
@@ -59,8 +46,16 @@ class _HomePageState extends State<HomePage> {
         size: 40,
       );
     }
+
     return Scaffold(
       appBar: AppBar(
+        actions: [
+          Padding(padding: const EdgeInsets.all(5),
+          child: profileIcon,
+          )
+        ],
+        centerTitle: true,
+        title: Text("Bienvenue", style: AppWidget.styledetexte(w: bold, taille: 17),),
         flexibleSpace: AppWidget.themeappbar(),
       ),
       drawer: Drawer(
@@ -81,7 +76,7 @@ class _HomePageState extends State<HomePage> {
                   ]),
             ),
             GestureDetector(
-              onTap: ()=> Navigator.push(context, MaterialPageRoute(builder: (context)=>const Profile())),
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const Profile())),
               child: AppWidget.menu(
                   "Profile",
                   const Icon(
@@ -90,6 +85,12 @@ class _HomePageState extends State<HomePage> {
                   )),
             ),
             GestureDetector(
+              onTap: (){
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const ReservationHistoryPage()),
+                );
+              },
               child: AppWidget.menu(
                   "Historique",
                   const Icon(
@@ -99,207 +100,112 @@ class _HomePageState extends State<HomePage> {
             ),
             GestureDetector(
               child: AppWidget.menu(
-                  "Mode sombre",
+                  "Contacter l'assitance",
                   const Icon(
-                    Icons.dark_mode,
+                    Icons.call,
                     color: Colors.black,
                   )),
             ),
             GestureDetector(
-              child: AppWidget.menu(
-                  "Se déconecter",
-                  const Icon(
-                    Icons.logout,
-                    color: Colors.black,
-                  )),
-            ),
+              onTap: () async {
+                try {
+                  bool? shouldLogout = await showDialog<bool>(
+                    context: context,
+                    builder: (BuildContext context) {
+                      return AlertDialog(
+                        title: const Text('Se déconnecter'),
+                        content: const Text('Voulez-vous vous déconnecter ?'),
+                        actions: [
+                          TextButton(
+                            child: const Text('Non'),
+                            onPressed: () {
+                              Navigator.of(context).pop(false);
+                            },
+                          ),
+                          TextButton(
+                            child: const Text('Oui'),
+                            onPressed: () {
+                              Navigator.of(context).pop(true);
+                            },
+                          ),
+                        ],
+                      );
+                    },
+                  );
 
+                  if (shouldLogout ?? false) {
+                    await FirebaseAuth.instance.signOut();
+                    SharedPreferences prefs = await SharedPreferences.getInstance();
+                    await prefs.setBool('isLoggedIn', false);
+
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(builder: (context) => const LoginPage()),
+                          (route) => false,
+                    );
+                  }
+                } catch (e) {
+                  print("Error signing out: $e");
+                }
+              },
+              child: AppWidget.menu(
+                "Se déconecter",
+                const Icon(
+                  Icons.logout,
+                  color: Colors.black,
+                ),
+              ),
+            ),
           ],
         ),
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            Stack(
-              children: [
-                Container(
-                  height: 120,
-                  decoration: const BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [Color(0xff28c6ff), Color(0xff86e0a0)],
-                      ),
-                      borderRadius: BorderRadius.only(
-                          bottomLeft: Radius.circular(45),
-                          bottomRight: Radius.circular(45))),
-                  child: Padding(
-                    padding: const EdgeInsets.only(
-                      top: 10,
-                      right: 20,
-                      left: 20,
+      body: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: GridView.builder(
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            childAspectRatio: 3 / 2,
+            crossAxisSpacing: 10,
+            mainAxisSpacing: 10,
+          ),
+          itemCount: regions.length,
+          itemBuilder: (context, index) {
+            String region = regions[index];
+            return GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => RegionTrainsPage(region: region),
+                  ),
+                );
+              },
+              child: Card(
+                elevation: 4,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                    gradient: LinearGradient(
+                      colors: [Color(0xff28c6ff), Color(0xff86e0a0)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        const SizedBox(
-                          height: 5,
-                        ),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              message,
-                              style: AppWidget.styledelabel2(),
-                            ),
-                            profileIcon
-                          ],
-                        ),
-                        const SizedBox(height: 20),
-                        Text(
-                          "Resever un ticket de voyage",
-                          style: AppWidget.styledelabel2(),
-                        )
-                      ],
+                  ),
+                  child: Center(
+                    child: Text(
+                      region,
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      textAlign: TextAlign.center,
                     ),
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(
-              height: 20,
-            ),
-            Column(
-              children: [
-                GestureDetector(
-                  onTap: (){
-                    Navigator.push(context,
-                    MaterialPageRoute(builder: (context)=>const Adamaoua())
-                    );
-                  },
-                  child: AppWidget.region("Adamaoua", "Centre"),
-                ),
-                const SizedBox(
-                  height: 20,
-                ),
-                GestureDetector(
-                  child: AppWidget.region("Est", "Ex. Nord"),
-                ),
-                const SizedBox(
-                  height: 20,
-                ),
-                GestureDetector(
-                  child: AppWidget.region("Littoral", "Nord"),
-                ),
-                const SizedBox(
-                  height: 20,
-                ),
-                GestureDetector(
-                  child: AppWidget.region("Nord-Ouest", "Ouest"),
-                ),
-                const SizedBox(
-                  height: 20,
-                ),
-                GestureDetector(
-                  child: AppWidget.region("Sud", "Sud-Ouest"),
-                ),
-                const SizedBox(
-                  height: 20,
-                ),
-              ],
-            )
-            /*Container(
-              padding: const EdgeInsets.symmetric(horizontal: 15),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Theme(
-                    data: ThemeData.dark(),
-                    child: Container(
-                      width: MediaQuery.of(context).size.width,
-                      padding: const EdgeInsets.all(15),
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.all(
-                          Radius.circular(12.0),
-                        ),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Text(
-                                "De",
-                                style: AppWidget.styledelabel2(),
-                              ),
-                            ],
-                          ),
-                          Row(
-                            children: [
-                              DropdownButton<String>(
-                                value: _selecteditem,
-                                hint: Text(
-                                  "Region de départ",
-                                  style: AppWidget.styledelabel2(),
-                                ),
-                                onChanged: (String? newValue) {
-                                  setState(() {
-                                    _selecteditem = newValue;
-                                  });
-                                },
-                                items: _menuitem.map((String value) {
-                                  return DropdownMenuItem<String>(
-                                    value: value,
-                                    child: Text(
-                                      value,
-                                      style: AppWidget.styledelabel2(),
-                                    ),
-                                  );
-                                }).toList(),
-                              )
-                            ],
-                          ),
-                          Row(
-                            children: [
-                              Text(
-                                "À",
-                                style: AppWidget.styledelabel2(),
-                              ),
-                            ],
-                          ),
-                          Row(
-                            children: [
-                              DropdownButton<String>(
-                                value: _selecteditem,
-                                hint: Text(
-                                  "Region de destination",
-                                  style: AppWidget.styledelabel2(),
-                                ),
-                                onChanged: (String? newValue) {
-                                  setState(() {
-                                    _selecteditem = newValue;
-                                  });
-                                },
-                                items: _menuitem.map((String value) {
-                                  return DropdownMenuItem<String>(
-                                    value: value,
-                                    child: Text(
-                                      value,
-                                      style: AppWidget.styledelabel2(),
-                                    ),
-                                  );
-                                }).toList(),
-                              )
-                            ],
-                          )
-                        ],
-                      ),
-                    ),
-                  )
-                ],
               ),
-            )*/
-          ],
-        ),
+            );
+          },
+        )
       ),
     );
   }

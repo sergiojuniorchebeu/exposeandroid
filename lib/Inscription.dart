@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:project_android/Home%20Page.dart';
 import 'package:project_android/Login.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'AppWidget.dart';
 
 class Inscription extends StatefulWidget {
@@ -15,7 +16,7 @@ class Inscription extends StatefulWidget {
 
 class _InscriptionState extends State<Inscription> {
   final TextEditingController _nomcomplet = TextEditingController();
-  final TextEditingController _login = TextEditingController();
+  final TextEditingController _email = TextEditingController();
   final TextEditingController _password = TextEditingController();
   final TextEditingController _confirmpassword = TextEditingController();
   bool _isPasswordVisible = false;
@@ -28,11 +29,10 @@ class _InscriptionState extends State<Inscription> {
   Future<void> _registerWithEmailAndPassword() async {
     try {
       final String nomComplet = _nomcomplet.text.trim();
-      final String email = _login.text.trim();
+      final String email = _email.text.trim();
       final String password = _password.text.trim();
-      final String confirmPassword = _confirmpassword.text.trim();
 
-      if (nomComplet.isEmpty || email.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
+      if (nomComplet.isEmpty || email.isEmpty || password.isEmpty ) {
         showDialog(
           context: context,
           builder: (BuildContext context) {
@@ -53,28 +53,7 @@ class _InscriptionState extends State<Inscription> {
         return;
       }
 
-      if (password != confirmPassword) {
-        showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              title: const Text('Erreur'),
-              content: const Text('Les mots de passe ne correspondent pas.'),
-              actions: [
-                TextButton(
-                  child: const Text('OK'),
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                ),
-              ],
-            );
-          },
-        );
-        return;
-      }
-
-       setState(() {
+      setState(() {
         _isLoading = true;
       });
 
@@ -89,9 +68,17 @@ class _InscriptionState extends State<Inscription> {
         await _firebaseFirestore.collection('users').doc(user.uid).set({
           'nomComplet': nomComplet,
           'email': email,
+          'solde compte':0.0,
+          'role': "user"
         });
-
-     Navigator.pushReplacement(context, MaterialPageRoute(builder: (context)=>const HomePage()));
+        // Enregistrer l'état de connexion dans SharedPreferences
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('isLoggedIn', true);
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const HomePage()),
+              (route) => false,
+        );
       } else {
         showDialog(
           context: context,
@@ -158,13 +145,22 @@ class _InscriptionState extends State<Inscription> {
       if (user != null) {
         final String nomComplet = googleUser.displayName ?? '';
         final String email = googleUser.email ?? '';
-
         await _firebaseFirestore.collection('users').doc(user.uid).set({
           'nomComplet': nomComplet,
           'email': email,
+          'solde compte':0.0,
+          'role': "user"
         });
 
-       Navigator.pushReplacement(context, MaterialPageRoute(builder: (context)=>const HomePage()));
+        // Enregistrer l'état de connexion dans SharedPreferences
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('isLoggedIn', true);
+
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const HomePage()),
+              (route) => false,
+        );
       } else {
         showDialog(
           context: context,
@@ -209,6 +205,7 @@ class _InscriptionState extends State<Inscription> {
       );
     }
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -262,7 +259,7 @@ class _InscriptionState extends State<Inscription> {
                           ),
                         ),
                         TextField(
-                          controller: _login,
+                          controller: _email,
                           decoration: InputDecoration(
                             suffixIcon: const Icon(
                               Icons.check,
